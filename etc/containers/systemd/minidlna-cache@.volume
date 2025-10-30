@@ -1,0 +1,8 @@
+[Volume]
+Group=101
+ServiceName=minidlna-cache-volume@
+User=100
+VolumeName=minidlna-%i-cache
+
+[Service]
+ExecStartPost=/usr/bin/chmod a=,g=rx,u=rwx /var/lib/containers/storage/volumes/minidlna-%i-cache/_data

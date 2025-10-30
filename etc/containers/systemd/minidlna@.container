@@ -4,7 +4,7 @@ ContainerName=minidlna-%i
 Image=ghcr.io/domini/minidlna:latest
 Mount=type=volume,source=minidlna-config@.volume,target=/etc/minidlna,ro
 Mount=type=tmpfs,target=/run/minidlna,chown,tmpfs-mode=1755
-Mount=type=tmpfs,target=/var/cache/minidlna,chown,tmpfs-mode=1750
+Mount=type=volume,source=minidlna-cache@.volume,target=/var/cache/minidlna
 Pull=newer
 ReadOnly=true
 
