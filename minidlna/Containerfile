@@ -1,0 +1,19 @@
+#   MINIDLNA_VERSION="$(curl https://ports.ubuntu.com/ubuntu-ports/dists/noble/main/binary-arm64/Packages.xz https://ports.ubuntu.com/ubuntu-ports/dists/noble/universe/binary-arm64/Packages.xz https://ports.ubuntu.com/ubuntu-ports/dists/noble/restricted/binary-arm64/Packages.xz https://ports.ubuntu.com/ubuntu-ports/dists/noble/multiverse/binary-arm64/Packages.xz https://ports.ubuntu.com/ubuntu-ports/dists/noble-updates/main/binary-arm64/Packages.xz https://ports.ubuntu.com/ubuntu-ports/dists/noble-updates/universe/binary-arm64/Packages.xz https://ports.ubuntu.com/ubuntu-ports/dists/noble-updates/restricted/binary-arm64/Packages.xz https://ports.ubuntu.com/ubuntu-ports/dists/noble-updates/multiverse/binary-arm64/Packages.xz https://ports.ubuntu.com/ubuntu-ports/dists/noble-backports/main/binary-arm64/Packages.xz https://ports.ubuntu.com/ubuntu-ports/dists/noble-backports/universe/binary-arm64/Packages.xz https://ports.ubuntu.com/ubuntu-ports/dists/noble-backports/restricted/binary-arm64/Packages.xz https://ports.ubuntu.com/ubuntu-ports/dists/noble-backports/multiverse/binary-arm64/Packages.xz https://ports.ubuntu.com/ubuntu-ports/dists/noble-security/main/binary-arm64/Packages.xz https://ports.ubuntu.com/ubuntu-ports/dists/noble-security/universe/binary-arm64/Packages.xz https://ports.ubuntu.com/ubuntu-ports/dists/noble-security/restricted/binary-arm64/Packages.xz https://ports.ubuntu.com/ubuntu-ports/dists/noble-security/multiverse/binary-arm64/Packages.xz --silent | xzgrep -P --null-data --only-matching '(?s)(?:^|(?<=\n)\n)Package: minidlna\n.+?(?:\n(?=\n)|$)' | grep -P --text --only-matching '(?<=^Version: ).+$' | sort -r --version-sort | head -n 1)"
+ARG MINIDLNA_VERSION
+
+FROM ubuntu:24.04
+ARG MINIDLNA_VERSION
+
+RUN --mount=type=tmpfs,target=/var/lib/apt/lists \
+    apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends --no-install-suggests -y install \
+      "minidlna=$MINIDLNA_VERSION" \
+ && apt-get clean
+
+VOLUME /etc/minidlna
+
+USER minidlna
+WORKDIR /home/minidlna
+
+ENTRYPOINT [ "/usr/sbin/minidlnad" ]
+CMD [ "-f", "/etc/minidlna/minidlna.conf", "-L", "-r", "-S" ]
