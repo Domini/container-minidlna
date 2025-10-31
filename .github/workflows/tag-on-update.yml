@@ -1,0 +1,46 @@
+name: Tag on update
+on:
+  schedule:
+  - cron: '*/5 * * * *'
+jobs:
+  tag-on-update:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+    - id: generate-tags
+      run: |
+        curl \
+          https://ports.ubuntu.com/ubuntu-ports/dists/noble/main/binary-arm64/Packages.xz                 --output           main-Packages.xz \
+          https://ports.ubuntu.com/ubuntu-ports/dists/noble/universe/binary-arm64/Packages.xz             --output           universe-Packages.xz \
+          https://ports.ubuntu.com/ubuntu-ports/dists/noble/restricted/binary-arm64/Packages.xz           --output           restricted-Packages.xz \
+          https://ports.ubuntu.com/ubuntu-ports/dists/noble/multiverse/binary-arm64/Packages.xz           --output           multiverse-Packages.xz \
+          https://ports.ubuntu.com/ubuntu-ports/dists/noble-updates/main/binary-arm64/Packages.xz         --output   updates-main-Packages.xz \
+          https://ports.ubuntu.com/ubuntu-ports/dists/noble-updates/universe/binary-arm64/Packages.xz     --output   updates-universe-Packages.xz \
+          https://ports.ubuntu.com/ubuntu-ports/dists/noble-updates/restricted/binary-arm64/Packages.xz   --output   updates-restricted-Packages.xz \
+          https://ports.ubuntu.com/ubuntu-ports/dists/noble-updates/multiverse/binary-arm64/Packages.xz   --output   updates-multiverse-Packages.xz \
+          https://ports.ubuntu.com/ubuntu-ports/dists/noble-backports/main/binary-arm64/Packages.xz       --output backports-main-Packages.xz \
+          https://ports.ubuntu.com/ubuntu-ports/dists/noble-backports/universe/binary-arm64/Packages.xz   --output backports-universe-Packages.xz \
+          https://ports.ubuntu.com/ubuntu-ports/dists/noble-backports/restricted/binary-arm64/Packages.xz --output backports-restricted-Packages.xz \
+          https://ports.ubuntu.com/ubuntu-ports/dists/noble-backports/multiverse/binary-arm64/Packages.xz --output backports-multiverse-Packages.xz \
+          https://ports.ubuntu.com/ubuntu-ports/dists/noble-security/main/binary-arm64/Packages.xz        --output  security-main-Packages.xz \
+          https://ports.ubuntu.com/ubuntu-ports/dists/noble-security/universe/binary-arm64/Packages.xz    --output  security-universe-Packages.xz \
+          https://ports.ubuntu.com/ubuntu-ports/dists/noble-security/restricted/binary-arm64/Packages.xz  --output  security-restricted-Packages.xz \
+          https://ports.ubuntu.com/ubuntu-ports/dists/noble-security/multiverse/binary-arm64/Packages.xz  --output  security-multiverse-Packages.xz \
+          --output-dir ${{ runner.temp }} \
+          --remote-time \
+          --fail \
+          --parallel
+        MINIDLNA_VERSION="$(xzgrep -P --null-data --only-matching '(?s)(?:^|(?<=\n)\n)Package: minidlna\n.+?(?:\n(?=\n)|$)' ${{ runner.temp }}/*Packages.xz | grep -P --text --only-matching '(?<=^Version: ).+$' | sort -r --version-sort | head -n 1)"
+        printf 'TAG=%s\n' "$MINIDLNA_VERSION" >>"$GITHUB_OUTPUT"
+    - id: tag-exists
+      run: |
+        HTTP_CODE="$(curl --head "${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.generate-tags.outputs.TAG }}" --output /dev/null --write-out '%{http_code}')"
+        printf 'HTTP_CODE=%s\n' "$HTTP_CODE" >>"$GITHUB_OUTPUT"
+    - if: ${{ success() && steps.tag-exists.outputs.HTTP_CODE == 404 }}
+      run: |
+        curl -X POST ${{ github.api_url }}/repos/${{ github.repository }}/git/refs \
+          -H 'Authorization: Bearer ${{ secrets.RECURSIVE_ACTIONS }}' \
+          -H 'Accept: application/vnd.github+json' \
+          --data-raw '{"ref":"refs/tags/${{ steps.generate-tags.outputs.TAG }}","sha":"${{ github.sha }}"}' \
+          --fail
