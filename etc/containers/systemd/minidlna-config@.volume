@@ -1,0 +1,3 @@
+[Volume]
+ServiceName=minidlna-config-volume@
+VolumeName=minidlna-%i-config
