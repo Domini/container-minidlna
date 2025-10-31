@@ -31,7 +31,7 @@ jobs:
           --remote-time \
           --fail \
           --parallel
-        MINIDLNA_VERSION="$(xzgrep -P --null-data --only-matching '(?s)(?:^|(?<=\n)\n)Package: minidlna\n.+?(?:\n(?=\n)|$)' ${{ runner.temp }}/*Packages.xz | grep -P --text --only-matching '(?<=^Version: ).+$' | sort -r --version-sort | head -n 1)"
+        MINIDLNA_VERSION="$(xzcat ${{ runner.temp }}/*Packages.xz | grep -P --null-data --only-matching '(?s)(?:^|(?<=\n)\n)Package: minidlna\n.+?(?:\n(?=\n)|$)' | grep -P --text --only-matching '(?<=^Version: ).+$' | sort -r --version-sort | head -n 1)"
         printf 'TAG=%s\n' "$MINIDLNA_VERSION" >>"$GITHUB_OUTPUT"
     - id: tag-exists
       run: |
